@@ -6,6 +6,7 @@ from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.utils.python import to_unicode
+from scrapy.utils.response import response_status_message
 
 from .objects import DynamicJar, Profiles, Proxies, Sessions, UserAgents
 from .utils import format_cookie
