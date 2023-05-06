@@ -213,6 +213,27 @@ class UserAgents(object):
         return provider
 
 
+class Profile():
+    
+    def __init__(self, proxy, user_agent, headers):
+        self.proxy = proxy
+        self.user_agent = user_agent
+        self.headers = headers
+
+    @classmethod
+    def random_profile(cls, proxies, ua, reuse_proxy=False):
+        proxy = proxies.get_random_proxy(reuse_proxy)
+        user_agent = ua.get_random_ua()
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", 
+            "Accept-Encoding": "gzip, deflate", 
+            "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7", 
+            "Dnt": "1", 
+            "Upgrade-Insecure-Requests": "1", 
+        }
+        
+        return cls(proxy, user_agent, headers) 
+
 class Profiles(object):
     """Controls profile storage and rotation. Rotation is random"""
 
@@ -263,12 +284,17 @@ class Profiles(object):
         return new_session_id
 
     def random_profile(self):
-        meta = {}
-        if self.proxies:
-            meta['proxy'] = self.proxies.get_random_proxy(self.reuse)
-        if self.ua:
-            meta['user-agent'] = self.ua.get_random_ua()
-        return meta
+        # profile = {}
+        # if self.proxies:
+        #     profile['proxy'] = self.proxies.get_random_proxy(self.reuse)
+        # if self.ua:
+        #     profile['user-agent'] = self.ua.get_random_ua()
+        
+        return Profile.random_profile(
+            proxies=self.proxies,
+            ua=self.ua,
+            reuse_proxy=self.reuse,
+        ) 
 
     def add_profile(self, request, session_id=None):
         """Adds session to request. If session_id is None generates random one"""
@@ -277,14 +303,16 @@ class Profiles(object):
             session_id = self.new_session()
         profile = self.ref[session_id]
         
-        proxy = profile.get('proxy', None)
-        if proxy:
-            request.meta['proxy'] = proxy 
-            if proxy.proxy_auth:
-                request.headers['Proxy-Authorization'] = proxy.proxy_auth
+        if profile.proxy:
+            request.meta['proxy'] = profile.proxy 
+            if profile.proxy.proxy_auth:
+                request.headers['Proxy-Authorization'] = profile.proxy.proxy_auth
 
-        if 'user-agent' in profile:
-            request.headers['User-Agent'] = profile['user-agent']
+        if profile.user_agent:
+            request.headers['User-Agent'] = profile.user_agent
+        
+        for key, value in profile.headers.items():
+            request.headers[key] = value
 
     def del_profile(self, session_id):
         if session_id in self.ref:
