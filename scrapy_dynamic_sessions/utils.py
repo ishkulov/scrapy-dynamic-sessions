@@ -15,19 +15,23 @@ class Proxy():
     def __getattr__(self, attr):
         if (hasattr(self.parse_result, attr)):
             return getattr(self.parse_result, attr)
-        else:
-            return getattr(self, attr)
     
+    @property
     def proxy_auth(self):
         return f"{self.parse_result.username}:{self.parse_result.password}"
 
+    @property
     def proxy_addr(self):
         return f"{self.parse_result.scheme}://{self.parse_result.hostname}:{self.parse_result.port}"
 
+    @property
     def basic_auth(self):
          return 'Basic ' + base64.b64encode(self.proxy_auth.encode()).decode()
+        
+    @property
+    def __str__(self):
+        return self.proxy_addr()
     
-
 
 def load_proxies(path):
     proxies = {}
@@ -35,7 +39,7 @@ def load_proxies(path):
     try:
         for line in fin.readlines():
             proxy = Proxy(line.strip())
-            proxies[proxy.proxy_addr()] = proxy.proxy_auth() 
+            proxies[proxy.proxy_addr] = proxy
             
     finally:
         fin.close()

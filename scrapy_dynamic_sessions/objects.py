@@ -167,10 +167,9 @@ class Proxies(object):
             else:
                 proxy_addresses = fresh_proxies
         proxy_addr = random.choice(list(proxy_addresses))
-        proxy_auth = self._proxies[proxy_addr]
         # Add proxy to used ones
         self._used_proxies.add(proxy_addr)
-        return proxy_addr, proxy_auth
+        return self._proxies[proxy_addr] 
 
     def del_proxy(self, proxy_address):
         if proxy_address in self._proxies:
@@ -277,11 +276,13 @@ class Profiles(object):
         if session_id is None:
             session_id = self.new_session()
         profile = self.ref[session_id]
-        if 'proxy' in profile:
-            request.meta['proxy'] = profile['proxy'][0]
-            if profile['proxy'][1]:
-                basic_auth = 'Basic ' + base64.b64encode(profile['proxy'][1].encode()).decode()
-                request.headers['Proxy-Authorization'] = basic_auth
+        
+        proxy = profile.get('proxy', None)
+        if proxy:
+            request.meta['proxy'] = proxy 
+            if proxy.proxy_auth:
+                request.headers['Proxy-Authorization'] = proxy.proxy_auth
+
         if 'user-agent' in profile:
             request.headers['User-Agent'] = profile['user-agent']
 
