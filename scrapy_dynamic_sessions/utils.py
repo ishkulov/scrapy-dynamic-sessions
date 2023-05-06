@@ -1,7 +1,32 @@
 import logging
 import re
+import base64
+
+from urllib.parse import urlparse, ParseResult
 
 logger = logging.getLogger(__name__)
+
+
+class Proxy():
+    
+    def __init__(self, url):
+        self.parse_result = urlparse(url)
+    
+    def __getattr__(self, attr):
+        if (hasattr(self.parse_result, attr)):
+            return getattr(self.parse_result, attr)
+        else:
+            return getattr(self, attr)
+    
+    def proxy_auth(self):
+        return f"{self.parse_result.username}:{self.parse_result.password}"
+
+    def proxy_addr(self):
+        return f"{self.parse_result.scheme}://{self.parse_result.hostname}:{self.parse_result.port}"
+
+    def basic_auth(self):
+         return 'Basic ' + base64.b64encode(self.proxy_auth.encode()).decode()
+    
 
 
 def load_proxies(path):
@@ -9,17 +34,9 @@ def load_proxies(path):
     fin = open(path)
     try:
         for line in fin.readlines():
-            parts = re.match('(\w+://)([^:]+?:[^@]+?@)?(.+)', line.strip())
-            if not parts:
-                continue
-
-            # Cut trailing @
-            if parts.group(2):
-                user_pass = parts.group(2)[:-1]
-            else:
-                user_pass = ''
-
-            proxies[parts.group(1) + parts.group(3)] = user_pass
+            proxy = Proxy(line.strip())
+            proxies[proxy.proxy_addr()] = proxy.proxy_auth() 
+            
     finally:
         fin.close()
         return proxies
